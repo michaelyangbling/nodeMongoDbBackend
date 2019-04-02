@@ -1,0 +1,15 @@
+{
+  "name": "studentsystem",
+  "version": "1.0.0",
+  "description": "student answers question in this systen",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "yang",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4",
+    "mongoose": "^5.4.20"
+  }
+}
