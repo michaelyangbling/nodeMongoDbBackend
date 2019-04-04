@@ -1,6 +1,7 @@
 const questionModel = require('../models/question/question.model.server');
 const answerModel = require('../models/answer/answer.model.server');
 const studentModel = require('../models/student/student.model.server');
+const test = require('./test');
 
 
 
@@ -59,18 +60,62 @@ answerQuestion=(sid, qid, answer)=>{
 
 
 //db functions for test and admin
-truncateDatabase = ()=>{
+truncateDatabase = (res)=>{
     return answerModel.remove({}).exec()//err is propogated
-      .then( ()=>studentModel.remove({}).exec() )//err is propogated
-      .then( ()=>questionModel.remove({}).exec()) //err is propogated
+                .then( ()=>studentModel.remove({}).exec()//err is propogated )//err is propogated
+                                .then( 
+                                    ()=>questionModel.remove({}).exec().then( ()=>res.json('success')).catch(err=>res.json(err)) )
+                                .catch(err=>res.json(err)) )
+                .catch(err=>res.json(err)) //err is propogated )//err is propogated
 }
+findAllAnswers=(res)=>
+        answerModel.find({})
+        .populate('student', ['username']).populate('question', ['question']).lean()
+        .exec().then(
+        (answers)=>{
+            // console.log('y')
+            // answers = answers.toObject()
+            // console.log('x')
+            // console.log(answers)
+            for(let index in answers){
+            answers[index].studentUsername = answers[index].student.username
+            answers[index].question = answers[index].question.question
+            delete answers[index]['student']
+            // console.log(an)
+            }
+            // console.log(answers)
+            res.json(answers)
+        })
+            .catch(err=>res.json(err))
 
-populateDatabase = ()=>{
-    truncateDatabase().then(
-        
-    )
+
+populateDatabase = (res)=>{
+    studentModel.collection.insertMany(test.students)
+                            .then( ()=>{
+                                        for(let index in test.questions){
+                                            let question = test.questions[index]
+                                            if (question.questionType == "MULTIPLE_CHOICE"){
+                                                question.multipleChoice={choices: question.choices, correct: question.correct}
+                                                //error in case of such id existing
+                                            }
+                                            else{
+                                                question.trueFalse={isTrue: question.isTrue}
+                                            }
+                                        }
+                                        questionModel.collection.insertMany(test.questions)
+                                        .then( ()=>answerModel.collection.insertMany(test.answers)
+                                                        .then( 
+                                                            ()=>{ 
+                                                                // console.log("what?")
+                                                                findAllAnswers(res)
+                                                                }) 
+                                                        .catch( err=>res.json(err) ) )
+                                        .catch( err=>res.json(err) ) 
+                                        } )
+                            .catch( err=>res.json(err) )
 }
 
 
 module.exports = { createQuestion, findAllQuestions, findQuestionById, 
-    updateQuestionById, questionModel, studentModel, truncateDatabase, answerModel, answerQuestion}
+    updateQuestionById, questionModel, studentModel, truncateDatabase, answerModel, answerQuestion,
+    populateDatabase}

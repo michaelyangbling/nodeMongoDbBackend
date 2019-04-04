@@ -20,16 +20,17 @@ app.post('/api/student/:sid/question/:qid/answer', function(req, res){
 app.get('/api/student/:sid/question/:qid/answer', function(req, res){
   // console.log('start get')
   dao.answerModel.find({student: parseInt(req.params.sid), question: parseInt(req.params.qid)})
-    .populate(['student, answer'])
-    .exec().then(
-      (answer)=>{
-        for(index in answer){
-        answer[index].student = answer[index].student.username
-        answer[index].question = answer[index].question.question
-        }
-        res.json(answer)
-      })
-        .catch(err=>res.json(err))
+  .populate('student', ['username']).populate('question', ['question']).lean()
+  .exec().then(
+  (answers)=>{
+      for(let index in answers){
+      answers[index].studentUsername = answers[index].student.username
+      answers[index].question = answers[index].question.question
+      delete answers[index]['student']
+      }
+      res.json(answers)
+  })
+      .catch(err=>res.json(err))
 })
 
 
@@ -114,8 +115,13 @@ app.delete('/api/question/:id', function(req, res) {
 
 
 //admin or test: remove all data
-app.post('/api/all', function(req, res){
-  dao.truncateDatabase.then((laststatus)=>res.json(laststatus), err=>res.json(err))
+app.delete('/api/all', function(req, res){
+  dao.truncateDatabase(res)
+})
+
+//admin or test: populate test.js data to test
+app.post('/api/populate', function(req, res){
+  dao.populateDatabase(res)
 })
 
 app.listen(3000)
